@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เช็คลิสต์ตรวจสอบบัญชีสหกรณ์ออมทรัพย์</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --surface3: #2a2a2a;
+    --border: #333;
+    --orange: #f07020;
+    --orange-dim: #b05010;
+    --orange-glow: rgba(240,112,32,0.15);
+    --orange-glow2: rgba(240,112,32,0.06);
+    --white: #f0ece4;
+    --white-dim: #aaa89f;
+    --white-muted: #666;
+    --green: #4caf78;
+    --red: #e05050;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans Thai', sans-serif;
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .logo-badge {
+    background: var(--orange);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 3px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+  }
+  .topbar-sub {
+    font-size: 12px;
+    color: var(--white-muted);
+    font-family: var(--mono);
+  }
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 220px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--orange-dim), var(--orange));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  .progress-text {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--orange);
+    white-space: nowrap;
+  }
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--white-muted);
+    padding: 5px 14px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ─── SIDEBAR / TOC ─── */
+  .sidebar {
+    position: sticky;
+    top: 70px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 0;
+    font-size: 13px;
+  }
+  .sidebar-title {
+    padding: 0 18px 12px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--orange);
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .toc-item {
+    padding: 6px 18px;
+    cursor: pointer;
+    color: var(--white-muted);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 3px solid transparent;
+    font-size: 12.5px;
+  }
+  .toc-item:hover { color: var(--white); background: var(--surface2); }
+  .toc-item.active { color: var(--orange); border-left-color: var(--orange); background: var(--orange-glow2); }
+  .toc-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .toc-progress {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: inherit;
+    opacity: 0.7;
+  }
+
+  /* ─── CONTENT ─── */
+  .content { min-width: 0; }
+
+  /* ─── SECTION ─── */
+  .section {
+    margin-bottom: 32px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-bottom: 2px solid var(--orange);
+  }
+  .section-icon {
+    width: 32px; height: 32px;
+    background: var(--orange);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--orange);
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--white);
+  }
+  .section-stats {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--white-muted);
+  }
+
+  /* ─── CHECKLIST TABLE ─── */
+  .check-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    overflow: hidden;
+  }
+  .check-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    min-height: 52px;
+  }
+  .check-row:last-child { border-bottom: none; }
+  .check-row:hover { background: var(--surface2); }
+  .check-row.checked { background: rgba(76,175,120,0.04); }
+  .check-row.checked .row-name { color: var(--white-muted); text-decoration: line-through; text-decoration-color: var(--white-muted); }
+
+  /* checkbox */
+  .check-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    cursor: pointer;
+    height: 100%;
+  }
+  .check-box {
+    width: 20px; height: 20px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .check-box:hover { border-color: var(--orange); }
+  .check-row.checked .check-box {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .check-icon { display: none; color: #fff; font-size: 13px; }
+  .check-row.checked .check-icon { display: block; }
+
+  /* row info */
+  .row-info {
+    padding: 10px 16px 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .row-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .row-code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--orange);
+    background: var(--orange-glow2);
+    border: 1px solid var(--orange-dim);
+    padding: 1px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .row-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--white);
+    transition: color 0.2s;
+  }
+  .row-type-badge {
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 3px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-asset { background: rgba(64,140,255,0.12); color: #80b4ff; border: 1px solid rgba(64,140,255,0.25); }
+  .badge-liability { background: rgba(220,80,80,0.12); color: #f09090; border: 1px solid rgba(220,80,80,0.25); }
+  .badge-equity { background: rgba(160,120,220,0.12); color: #c0a0ff; border: 1px solid rgba(160,120,220,0.25); }
+  .badge-revenue { background: rgba(80,200,120,0.12); color: #80e0a0; border: 1px solid rgba(80,200,120,0.25); }
+  .badge-expense { background: rgba(240,160,40,0.12); color: #f0c060; border: 1px solid rgba(240,160,40,0.25); }
+
+  .row-desc {
+    font-size: 12px;
+    color: var(--white-muted);
+    line-height: 1.4;
+  }
+
+  /* link btn */
+  .row-link {
+    padding: 10px 10px;
+    display: flex;
+    align-items: center;
+  }
+  .btn-info {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--orange);
+    padding: 5px 12px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-info:hover {
+    background: var(--orange-glow);
+    border-color: var(--orange);
+  }
+  .btn-info-icon { font-size: 14px; }
+
+  /* note input */
+  .row-note-cell {
+    padding: 8px 12px 8px 0;
+  }
+  .note-toggle {
+    background: none;
+    border: none;
+    color: var(--white-muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+    border-radius: 3px;
+  }
+  .note-toggle:hover { color: var(--orange); background: var(--orange-glow2); }
+  .note-area {
+    display: none;
+    padding: 0 16px 12px 44px;
+    background: inherit;
+  }
+  .note-area.open { display: block; }
+  .note-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--white);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    resize: vertical;
+    min-height: 56px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .note-input:focus { outline: none; border-color: var(--orange); }
+  .note-input::placeholder { color: var(--white-muted); }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--orange);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 720px;
+    position: relative;
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .modal-badge {
+    background: var(--orange);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.3;
+  }
+  .modal-subtitle {
+    font-size: 12px;
+    color: var(--white-muted);
+    font-family: var(--mono);
+    margin-top: 3px;
+  }
+  .modal-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--white-muted);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { background: var(--surface3); color: var(--white); }
+
+  .modal-body {
+    padding: 22px 24px;
+  }
+
+  /* modal sections */
+  .m-section {
+    margin-bottom: 22px;
+  }
+  .m-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--orange);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .m-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .m-def {
+    background: var(--surface2);
+    border-left: 3px solid var(--orange);
+    padding: 12px 16px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--white);
+  }
+
+  .m-kv {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .m-kv-key {
+    color: var(--orange);
+    font-weight: 500;
+    white-space: nowrap;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding-top: 1px;
+  }
+  .m-kv-val { color: var(--white); }
+
+  /* journal table in modal */
+  .m-journal {
+    margin-top: 8px;
+  }
+  .m-je-title {
+    font-size: 12px;
+    color: var(--white-muted);
+    margin-bottom: 6px;
+    padding: 5px 10px;
+    background: var(--bg);
+    border-radius: 3px;
+    font-family: var(--mono);
+  }
+  .m-je-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-bottom: 12px;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .m-je-table th {
+    background: #1a1a1a;
+    color: var(--orange);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 12px;
+    text-align: left;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  .m-je-table th:last-child, .m-je-table th:nth-last-child(2) { text-align: right; }
+  .m-je-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--white);
+  }
+  .m-je-table tr:last-child td { border-bottom: none; }
+  .m-je-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .m-je-table td:last-child, .m-je-table td:nth-last-child(2) { text-align: right; font-family: var(--mono); }
+  .side-d { color: var(--orange); font-weight: 600; font-family: var(--mono); font-size: 11px; }
+  .side-c { color: var(--white-muted); font-weight: 500; font-family: var(--mono); font-size: 11px; }
+  .acc-debit { color: var(--white); }
+  .acc-credit { color: var(--white-muted); padding-left: 24px; }
+  .amt-d { color: var(--orange); font-weight: 500; }
+  .amt-c { color: #a0c8ff; font-weight: 500; }
+
+  /* ref badge */
+  .m-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--orange-glow2);
+    border: 1px solid var(--orange-dim);
+    padding: 5px 12px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--white-muted);
+    font-style: italic;
+    margin-top: 6px;
+  }
+  .m-ref span { color: var(--orange); }
+
+  /* rule list */
+  .m-rules {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .m-rules li {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--white);
+    line-height: 1.5;
+  }
+  .m-rules li::before {
+    content: '▸';
+    color: var(--orange);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* nav btns in modal */
+  .modal-nav {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    gap: 12px;
+  }
+  .btn-nav {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--white-muted);
+    padding: 7px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-nav:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-glow2); }
+  .btn-nav:disabled { opacity: 0.3; pointer-events: none; }
+
+  /* ─── EMPTY STATE ─── */
+  .all-done {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--white-muted);
+    font-size: 14px;
+  }
+  .all-done.show { display: flex; }
+  .done-icon { font-size: 48px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--orange-dim); }
+
+  /* responsive */
+  @media(max-width: 768px) {
+    .main { grid-template-columns: 1fr; padding: 16px; }
+    .sidebar { position: static; }
+    .topbar { flex-wrap: wrap; gap: 10px; }
+    .check-row { grid-template-columns: 40px 1fr auto; }
+    .row-note-cell { display: none; }
+  }
+
+  /* print */
+  @media print {
+    .btn-info, .note-toggle, .modal-overlay, .topbar { display: none !important; }
+    .main { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    body { background: white; color: black; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-badge">AUDIT</div>
+    <div>
+      <div class="topbar-title">เช็คลิสต์ตรวจสอบบัญชีสหกรณ์ออมทรัพย์</div>
+      <div class="topbar-sub">อ้างอิง: ระเบียบนายทะเบียนสหกรณ์ ว่าด้วยการบัญชี พ.ศ. 2563</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-text" id="progressText">0 / 0</div>
+  </div>
+  <button class="btn-reset" onclick="resetAll()">รีเซ็ต</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR TOC -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-title">สารบัญ</div>
+    <div id="tocList"></div>
+  </div>
+
+  <!-- CHECKLIST CONTENT -->
+  <div class="content" id="content"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalIfOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-badge" id="mCode"></div>
+      <div>
+        <div class="modal-title" id="mTitle"></div>
+        <div class="modal-subtitle" id="mType"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+    <div class="modal-nav">
+      <button class="btn-nav" id="btnPrev" onclick="navModal(-1)">← ก่อนหน้า</button>
+      <button class="btn-nav" id="btnNext" onclick="navModal(1)">ถัดไป →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  DATA: accounts with full knowledge base
+// ============================================================
+const SECTIONS = [
+  {
+    id: "s1",
+    icon: "🏦",
+    label: "หมวด 1",
+    title: "สินทรัพย์",
+    accounts: [
+      {
+        code: "1.1",
+        name: "เงินสด",
+        type: "สินทรัพย์",
+        badge: "badge-asset",
+        shortDesc: "ธนบัตร เหรียญ เช็คที่ยังไม่ฝาก ดราฟต์ ธนาณัติ",
+        checkItems: [
+          "ตรวจนับเงินสดจริง ณ วันตรวจสอบ เทียบกับยอดบัญชี",
+          "มีใบเสร็จรับเงิน / ใบสำคัญจ่ายประกอบทุกรายการ",
+          "บันทึกในสมุดเงินสด (แบบบัญชีหมายเลข 1) ครบถ้วน",
+          "เงินสดขาดบัญชี — ตั้งลูกหนี้ / ค่าเผื่อและเปิดเผยในหมายเหตุ",
+          "เงินสดเกินบัญชี — แยกบัญชีไว้จนพ้นอายุความ",
+        ],
+        knowledge: {
+          def: "เงินสดที่สหกรณ์ถือไว้ในมือ ได้แก่ ธนบัตร เหรียญกษาปณ์ เช็คที่ยังไม่ได้นำฝาก เช็คเดินทาง ดราฟต์ธนาคาร และธนาณัติ\n\nไม่รวม: ดวงตราไปรษณียากร อากรแสตมป์ เช็คลงวันที่ล่วงหน้า ตั๋วเงิน พันธบัตรรัฐบาล ใบหุ้น",
+          recognition: "รับรู้ทันทีในวันที่เกิดรายการรับหรือจ่ายเงินสดจริง ต้องมีเอกสารประกอบทุกรายการ บันทึกในสมุดเงินสด (แบบบัญชีหมายเลข 1)",
+          measurement: "วัดด้วยจำนวนเงินที่รับหรือจ่ายจริง ไม่มีการปรับมูลค่า ณ วันที่ได้มา",
+          ref: "ข้อ 12 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "รับค่าหุ้น 25,000 + ค่าธรรมเนียมแรกเข้า 500 บาท", rows: [
+              { side:"Dr", acc:"เงินสด", dr:"25,500", cr:"" },
+              { side:"Cr", acc:"ทุนเรือนหุ้น", dr:"", cr:"25,000" },
+              { side:"Cr", acc:"ค่าธรรมเนียมแรกเข้า (รายได้)", dr:"", cr:"500" },
+            ]},
+            { title: "ตรวจนับพบเงินสดขาดบัญชี 500 บาท ยังหาผู้รับผิดชอบไม่ได้", rows: [
+              { side:"Dr", acc:"เงินสดขาดบัญชี (สินทรัพย์)", dr:"500", cr:"" },
+              { side:"Dr", acc:"ค่าเสียหายจากเงินสดขาดบัญชี (ค่าใช้จ่าย)", dr:"500", cr:"" },
+              { side:"Cr", acc:"เงินสด", dr:"", cr:"500" },
+              { side:"Cr", acc:"ค่าเผื่อเงินสดขาดบัญชี (บัญชีปรับมูลค่า)", dr:"", cr:"500" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "1.2",
+        name: "เงินฝากธนาคาร",
+        type: "สินทรัพย์",
+        badge: "badge-asset",
+        shortDesc: "ออมทรัพย์ กระแสรายวัน สลากออมสิน สลาก ธกส. / ธอส.",
+        checkItems: [
+          "กระทบยอด Bank Statement ทุกสิ้นเดือนครบทุกบัญชี",
+          "แยกบัญชีตามธนาคารและประเภท (ออมทรัพย์ / กระแสรายวัน)",
+          "บันทึกในสมุดรายวันทั่วไป (แบบบัญชีหมายเลข 2) ไม่ใช่สมุดเงินสด",
+          "ปรับปรุงดอกเบี้ยค้างรับ ณ วันสิ้นปีทางบัญชี",
+          "เปิดเผยเงื่อนไข / ภาระผูกพันในหมายเหตุประกอบงบการเงิน",
+        ],
+        knowledge: {
+          def: "เงินที่สหกรณ์ฝากไว้กับธนาคาร รวมถึงสลากออมสิน สลากออมทรัพย์ ธ.ก.ส. และสลากออมทรัพย์ ธอส. ต้องแยกบัญชีตามชื่อธนาคารและประเภท",
+          recognition: "รับรู้เมื่อนำเงินฝากหรือถอนออกจากธนาคารจริง บันทึกในสมุดรายวันทั่วไป (แบบบัญชีหมายเลข 2)",
+          measurement: "วัดด้วยจำนวนเงินที่ฝาก/ถอนจริง ปรับปรุงดอกเบี้ยค้างรับสิ้นปีตามเกณฑ์คงค้าง",
+          ref: "ข้อ 14-15 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "นำเงินสดฝากธนาคารกรุงไทย — ออมทรัพย์ 50,000 บาท", rows: [
+              { side:"Dr", acc:"เงินฝากธนาคารกรุงไทย — ออมทรัพย์", dr:"50,000", cr:"" },
+              { side:"Cr", acc:"เงินสด", dr:"", cr:"50,000" },
+            ]},
+            { title: "สิ้นปี ดอกเบี้ยค้างรับที่ธนาคารยังไม่ทบยอด 800 บาท", rows: [
+              { side:"Dr", acc:"รายได้ค้างรับ (สินทรัพย์)", dr:"800", cr:"" },
+              { side:"Cr", acc:"ดอกเบี้ยเงินฝากธนาคาร (รายได้)", dr:"", cr:"800" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "1.3",
+        name: "เงินฝากสหกรณ์อื่น",
+        type: "สินทรัพย์",
+        badge: "badge-asset",
+        shortDesc: "เงินที่ฝากไว้ที่ชุมนุมสหกรณ์ หรือสหกรณ์อื่น",
+        checkItems: [
+          "มีหลักฐานการฝากและเงื่อนไขการถอนคืน",
+          "ตรวจสอบสถานะสหกรณ์ผู้รับฝาก — มีปัญหาสภาพคล่องหรือไม่",
+          "กรณีถอนคืนไม่ได้ — ตั้งค่าเผื่อสงสัยจะสูญเต็มจำนวน",
+          "กรณีผู้รับฝากขาดทุนสะสมเกินกึ่งหนึ่งของทุนหุ้น — ตั้งเผื่อเต็มจำนวน",
+          "เปิดเผยเงื่อนไขและการถอนคืนไม่ได้ในหมายเหตุ",
+        ],
+        knowledge: {
+          def: "เงินที่สหกรณ์นำไปฝากไว้ที่ชุมนุมสหกรณ์หรือสหกรณ์อื่น ถือเป็นสินทรัพย์ของสหกรณ์ผู้ฝาก",
+          recognition: "รับรู้เมื่อโอนเงินให้ชุมนุมสหกรณ์หรือสหกรณ์อื่นจริง วัดด้วยจำนวนเงินที่ฝากจริง",
+          measurement: "แสดงด้วยราคาทุน หักค่าเผื่อสงสัยจะสูญ (ถ้ามี) ตรวจสอบสถานะผู้รับฝากทุกสิ้นปี",
+          ref: "ข้อ 16-17 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "ตั้งค่าเผื่อสงสัยจะสูญ 500,000 บาท (ผู้รับฝากมีปัญหาสภาพคล่อง)", rows: [
+              { side:"Dr", acc:"เงินฝากสหกรณ์อื่นสงสัยจะสูญ (ค่าใช้จ่าย)", dr:"500,000", cr:"" },
+              { side:"Cr", acc:"ค่าเผื่อเงินฝากสหกรณ์อื่นสงสัยจะสูญ", dr:"", cr:"500,000" },
+            ]},
+            { title: "ได้รับเงินฝากคืนแล้ว — โอนกลับค่าเผื่อ", rows: [
+              { side:"Dr", acc:"ค่าเผื่อเงินฝากสหกรณ์อื่นสงสัยจะสูญ", dr:"500,000", cr:"" },
+              { side:"Cr", acc:"เงินฝากสหกรณ์อื่นสงสัยจะสูญ (ลดยอดค่าใช้จ่าย)", dr:"", cr:"500,000" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "1.4",
+        name: "ลูกหนี้เงินให้กู้",
+        type: "สินทรัพย์",
+        badge: "badge-asset",
+        shortDesc: "ลูกหนี้ฉุกเฉิน / สามัญ / พิเศษ / ปรับโครงสร้าง / ระหว่างดำเนินคดี",
+        checkItems: [
+          "กระทบยอดลูกหนี้รายบุคคลกับยอดรวมในบัญชีแยกประเภท",
+          "ตรวจสอบลำดับชำระหนี้: ค่าปรับ → ดอกเบี้ยค้าง → ดอกเบี้ยปี → เงินต้น",
+          "คำนวณและบันทึกดอกเบี้ยค้างรับ ณ วันสิ้นปี",
+          "ประมาณการค่าเผื่อหนี้สงสัยจะสูญตามประกาศกรมตรวจบัญชีสหกรณ์",
+          "ลูกหนี้ NPL — ระงับการรับรู้รายได้ดอกเบี้ยและเปิดเผยในหมายเหตุ",
+          "กรณีตัดหนี้สูญ — ต้องผ่านมติที่ประชุมใหญ่ > กึ่งหนึ่ง",
+          "ตรวจสอบว่าตั้งค่าเผื่อเต็มจำนวนในปีก่อนหน้าก่อนตัดหนี้สูญ",
+        ],
+        knowledge: {
+          def: "ยอดเงินต้นที่สมาชิกกู้ไปและยังไม่ได้ชำระคืน แบ่งเป็น 3 ประเภท:\n(1) เงินกู้ฉุกเฉิน — ผู้จัดการอนุมัติทันที\n(2) เงินกู้สามัญ — ต้องผ่านมติคณะกรรมการ มีผู้ค้ำประกัน\n(3) เงินกู้พิเศษ — วงเงินสูง มีหลักทรัพย์จำนอง",
+          recognition: "รับรู้ในวันที่จ่ายเงินกู้ให้สมาชิกจริง ต้องมีหลักฐาน: หนังสือกู้ ใบสำคัญจ่าย หนังสือค้ำประกัน แยกบัญชียอยรายบุคคล",
+          measurement: "แสดงด้วยยอดคงเหลือ หักค่าเผื่อหนี้สงสัยจะสูญ ลำดับชำระ: ค่าปรับค้างรับ → ดอกเบี้ยค้าง → ดอกเบี้ยประจำปี → เงินต้น",
+          ref: "ข้อ 25-33 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "รับชำระหนี้สามัญ เงินต้น 20,000 + ดอกเบี้ย 800 บาท", rows: [
+              { side:"Dr", acc:"เงินสด", dr:"20,800", cr:"" },
+              { side:"Cr", acc:"ลูกหนี้เงินให้กู้สามัญ", dr:"", cr:"20,000" },
+              { side:"Cr", acc:"ดอกเบี้ยรับจากเงินให้กู้ (รายได้)", dr:"", cr:"800" },
+            ]},
+            { title: "สิ้นปี ตั้งค่าเผื่อหนี้สงสัยจะสูญเพิ่ม 120,000 บาท", rows: [
+              { side:"Dr", acc:"หนี้สงสัยจะสูญ (ค่าใช้จ่าย)", dr:"120,000", cr:"" },
+              { side:"Cr", acc:"ค่าเผื่อหนี้สงสัยจะสูญ — ลูกหนี้เงินกู้", dr:"", cr:"120,000" },
+            ]},
+            { title: "ที่ประชุมใหญ่อนุมัติตัดหนี้สูญ 30,000 บาท", rows: [
+              { side:"Dr", acc:"ค่าเผื่อหนี้สงสัยจะสูญ", dr:"30,000", cr:"" },
+              { side:"Cr", acc:"ลูกหนี้เงินให้กู้สามัญ", dr:"", cr:"30,000" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "1.5",
+        name: "เงินลงทุนในหลักทรัพย์",
+        type: "สินทรัพย์",
+        badge: "badge-asset",
+        shortDesc: "หุ้น ชสท. / หลักทรัพย์เผื่อขาย / ตราสารหนี้ถือจนครบกำหนด / กองทุนรวม",
+        checkItems: [
+          "จัดประเภทเงินลงทุนให้ถูกต้อง (ทั่วไป / เผื่อขาย / ถือครบกำหนด / กองทุน)",
+          "หลักทรัพย์เผื่อขาย — ปรับมูลค่าเป็นมูลค่ายุติธรรม บันทึกส่วนต่างในส่วนทุน",
+          "เงินลงทุนทั่วไป — ตรวจสอบมูลค่าต่อหุ้นชุมนุมสหกรณ์ กรณีด้อยค่าบันทึกทันที",
+          "ตราสารหนี้ถือจนครบกำหนด — แสดงด้วยราคาทุนตัดจำหน่าย",
+          "กรณีจำหน่ายเงินลงทุน — โอนปิดค่าเผื่อทุกบัญชีที่เกี่ยวข้องก่อนรับรู้กำไร/ขาดทุน",
+          "เปิดเผยนโยบายการบัญชีและข้อมูลกำไร(ขาดทุน)ที่ยังไม่เกิดขึ้น",
+        ],
+        knowledge: {
+          def: "เงินที่สหกรณ์นำไปลงทุนเพื่อเพิ่มความมั่งคั่ง แบ่งเป็น 4 ประเภท:\n(1) เงินลงทุนทั่วไป: หุ้นชุมนุมสหกรณ์ — ไม่มีตลาด\n(2) หลักทรัพย์เผื่อขาย: ตราสารหนี้/ทุนที่มีตลาด\n(3) ตราสารหนี้ถือจนครบกำหนด: พันธบัตร หุ้นกู้\n(4) กองทุนรวม / กองทุนส่วนบุคคล",
+          recognition: "รับรู้เมื่อได้รับโอนกรรมสิทธิ์ในหลักทรัพย์ ต้นทุน = ราคาซื้อ + ค่านายหน้า + ค่าธรรมเนียม + ภาษีอากร",
+          measurement: "เงินลงทุนทั่วไป → ราคาทุน | หลักทรัพย์เผื่อขาย → มูลค่ายุติธรรม (ผลต่างในส่วนทุน) | ตราสารหนี้ถือจนครบ → ราคาทุนตัดจำหน่าย",
+          ref: "ข้อ 18-24 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "หลักทรัพย์เผื่อขายมูลค่ายุติธรรมเพิ่มขึ้น 15,000 บาท", rows: [
+              { side:"Dr", acc:"ค่าเผื่อการปรับมูลค่าเงินลงทุน (สินทรัพย์)", dr:"15,000", cr:"" },
+              { side:"Cr", acc:"กำไรจากเงินลงทุนที่ยังไม่เกิดขึ้น (ส่วนทุน)", dr:"", cr:"15,000" },
+            ]},
+            { title: "จำหน่ายหลักทรัพย์เผื่อขาย ราคาทุน 200,000 ขายได้ 220,000", rows: [
+              { side:"Dr", acc:"เงินฝากธนาคาร", dr:"220,000", cr:"" },
+              { side:"Cr", acc:"หลักทรัพย์เผื่อขาย", dr:"", cr:"200,000" },
+              { side:"Cr", acc:"กำไรจากการจำหน่ายเงินลงทุน (รายได้)", dr:"", cr:"20,000" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "1.6",
+        name: "ที่ดิน อาคาร และอุปกรณ์",
+        type: "สินทรัพย์",
+        badge: "badge-asset",
+        shortDesc: "สินทรัพย์มีตัวตน อายุใช้งาน > 1 รอบปีบัญชี",
+        checkItems: [
+          "ตรวจนับสินทรัพย์และตรวจสอบเอกสารสิทธิ์ทุกสิ้นปีบัญชี",
+          "แยกรายจ่ายที่เพิ่มมูลค่า (บวกเข้าราคาทุน) กับรายจ่ายซ่อมบำรุง (เป็นค่าใช้จ่าย)",
+          "คำนวณค่าเสื่อมราคาตามอัตราที่กำหนด เริ่มเมื่อพร้อมใช้งาน",
+          "ที่ดิน — ไม่ต้องคิดค่าเสื่อมราคา",
+          "กรณีตีราคาสินทรัพย์ใหม่ — ต้องตีทุกรายการในประเภทเดียวกัน รอบ ≥ 5 ปี",
+          "มูลค่าเพิ่มจากตีราคา → ส่วนเกินทุน (ส่วนทุน) | มูลค่าลด → ขาดทุน (ค่าใช้จ่าย)",
+          "กรณีจำหน่ายสินทรัพย์ — โอนปิดราคาทุนและค่าเสื่อมสะสม บันทึกกำไร/ขาดทุน",
+        ],
+        knowledge: {
+          def: "สินทรัพย์มีตัวตน ใช้ในการดำเนินงาน อายุใช้ประโยชน์ > 1 รอบปีบัญชี\nอัตราค่าเสื่อมราคา: อาคาร 2.5-10% | เครื่องยนต์ 5-20% | รถยนต์ 10-20% | ครุภัณฑ์ 10-20% | คอมพิวเตอร์ 20-25%",
+          recognition: "รับรู้เมื่อ (1) มีความเป็นไปได้ค่อนข้างแน่จะได้รับประโยชน์เชิงเศรษฐกิจ และ (2) วัดมูลค่าต้นทุนได้น่าเชื่อถือ",
+          measurement: "ราคาทุน = ราคาซื้อ + ภาษีอากร + ค่าธรรมเนียม + ต้นทุนโดยตรงเพื่อให้พร้อมใช้งาน\nแสดงด้วยราคาทุนหักค่าเสื่อมราคาสะสม เมื่อสิ้นอายุการใช้งานคงเหลือ 1 บาทต่อหน่วย",
+          ref: "ข้อ 53-60 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "ค่าเสื่อมราคารถยนต์ 610,000 บาท อัตรา 20% (วิธีเส้นตรง)", rows: [
+              { side:"Dr", acc:"ค่าเสื่อมราคาอาคารและอุปกรณ์ (ค่าใช้จ่าย)", dr:"122,000", cr:"" },
+              { side:"Cr", acc:"ค่าเสื่อมราคาสะสม — ยานพาหนะ", dr:"", cr:"122,000" },
+            ]},
+            { title: "จำหน่ายรถยนต์ ราคาทุน 610,000 ค่าเสื่อมสะสม 366,000 ขายได้ 280,000", rows: [
+              { side:"Dr", acc:"เงินสด / เงินฝากธนาคาร", dr:"280,000", cr:"" },
+              { side:"Dr", acc:"ค่าเสื่อมราคาสะสม — ยานพาหนะ", dr:"366,000", cr:"" },
+              { side:"Dr", acc:"ขาดทุนจากการจำหน่ายสินทรัพย์", dr:"36,000", cr:"" },
+              { side:"Cr", acc:"ยานพาหนะ", dr:"", cr:"610,000" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "1.7",
+        name: "สินทรัพย์ไม่มีตัวตน",
+        type: "สินทรัพย์",
+        badge: "badge-asset",
+        shortDesc: "สิทธิการเช่า โปรแกรมคอมพิวเตอร์ สิทธิการใช้ประโยชน์ ลิขสิทธิ์",
+        checkItems: [
+          "มีเอกสารสัญญาหรือใบอนุญาตประกอบ",
+          "ตัดจำหน่ายด้วยวิธีเส้นตรงตามอายุการให้ประโยชน์ ปีสุดท้ายตัดจนหมด",
+          "หากไม่มีอัตราที่กำหนด ตัดจำหน่ายได้ไม่เกิน 10 ปี",
+          "กรณีเลิกใช้ก่อนหมดอายุ — ตัดจำหน่ายส่วนที่เหลือเป็นค่าใช้จ่ายทันที",
+          "เปิดเผยวิธีและอัตราการตัดจำหน่ายในหมายเหตุประกอบงบการเงิน",
+        ],
+        knowledge: {
+          def: "สินทรัพย์ที่ไม่มีรูปร่างทางกายภาพ สามารถระบุได้ เช่น สิทธิการเช่า โปรแกรมคอมพิวเตอร์ ลิขสิทธิ์ สิทธิบัตร สัมปทาน สิทธิการใช้ประโยชน์ในอาคาร",
+          recognition: "รับรู้เมื่อมีความเป็นไปได้ค่อนข้างแน่ที่จะได้รับประโยชน์เชิงเศรษฐกิจ ต้นทุน = ราคาซื้อ + ภาษีนำเข้า + ค่าธรรมเนียมวิชาชีพ",
+          measurement: "ตัดจำหน่ายด้วยวิธีเส้นตรงตามอายุการให้ประโยชน์ มูลค่าคงเหลือสุดท้าย = 0 หักออกจากบัญชีสินทรัพย์โดยตรง",
+          ref: "ข้อ 61-64 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "ตัดจำหน่ายสิทธิการเช่า 3 ปี (120,000 ÷ 3) = 40,000 ต่อปี", rows: [
+              { side:"Dr", acc:"ค่าตัดจำหน่ายสินทรัพย์ไม่มีตัวตน (ค่าใช้จ่าย)", dr:"40,000", cr:"" },
+              { side:"Cr", acc:"สิทธิการเช่า", dr:"", cr:"40,000" },
+            ]},
+          ]
+        }
+      },
+    ]
+  },
+  {
+    id: "s2",
+    icon: "📋",
+    label: "หมวด 2",
+    title: "หนี้สิน",
+    accounts: [
+      {
+        code: "2.1",
+        name: "เจ้าหนี้เงินรับฝาก",
+        type: "หนี้สิน",
+        badge: "badge-liability",
+        shortDesc: "เงินฝากออมทรัพย์ เงินฝากประจำ ของสมาชิก",
+        checkItems: [
+          "กระทบยอดเจ้าหนี้เงินรับฝากรายบุคคลกับยอดรวมในบัญชีแยกประเภท",
+          "ปรับปรุงดอกเบี้ยเงินรับฝากค้างจ่าย ณ วันสิ้นปีทางบัญชี",
+          "เงินรับฝากเป็นหนี้สิน ไม่ใช่ทุน — ตรวจสอบการจำแนกประเภทให้ถูกต้อง",
+          "ตรวจสอบว่าดอกเบี้ยจ่ายบันทึกตามเกณฑ์คงค้าง ไม่ใช่เกณฑ์เงินสด",
+        ],
+        knowledge: {
+          def: "เงินที่สมาชิกฝากไว้กับสหกรณ์ สหกรณ์มีภาระต้องจ่ายคืนพร้อมดอกเบี้ย จึงจัดเป็น 'หนี้สิน' ไม่ใช่ทุน แตกต่างจากทุนเรือนหุ้น",
+          recognition: "รับรู้ในวันที่รับเงินฝากจริง ต้องมีหลักฐาน: ใบส่งเงินฝาก สมุดคู่ฝาก แยกบัญชียอยเป็นรายบุคคล",
+          measurement: "แสดงด้วยยอดคงเหลือ ปรับปรุงดอกเบี้ยค้างจ่ายตามเกณฑ์คงค้างทุกสิ้นปี",
+          ref: "ข้อ 75 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "สมาชิกฝากเงินออมทรัพย์ 38,000 บาท", rows: [
+              { side:"Dr", acc:"เงินสด", dr:"38,000", cr:"" },
+              { side:"Cr", acc:"เจ้าหนี้เงินรับฝากออมทรัพย์", dr:"", cr:"38,000" },
+            ]},
+            { title: "สิ้นปี ปรับปรุงดอกเบี้ยเงินรับฝากค้างจ่าย 45,000 บาท", rows: [
+              { side:"Dr", acc:"ดอกเบี้ยจ่าย (ค่าใช้จ่าย)", dr:"45,000", cr:"" },
+              { side:"Cr", acc:"ค่าใช้จ่ายค้างจ่าย (หนี้สิน)", dr:"", cr:"45,000" },
+            ]},
+          ]
+        }
+      },
+    ]
+  },
+  {
+    id: "s3",
+    icon: "💼",
+    label: "หมวด 3",
+    title: "ทุนของสหกรณ์",
+    accounts: [
+      {
+        code: "3.1",
+        name: "ทุนเรือนหุ้น",
+        type: "ทุน",
+        badge: "badge-equity",
+        shortDesc: "เงินที่สมาชิกสะสมในรูปหุ้น — เป็นเจ้าของ ไม่ใช่เจ้าหนี้",
+        checkItems: [
+          "กระทบยอดทะเบียนหุ้นรายบุคคลกับยอดรวมบัญชีทุนเรือนหุ้น",
+          "กรณีสมาชิกลาออก — จ่ายคืนตามมูลค่าในทะเบียนหุ้น",
+          "กรณีมีขาดทุนสะสม — คำนวณมูลค่าต่อหุ้นใหม่ตามคำสั่งนายทะเบียนก่อนจ่ายคืน",
+          "ทุนเรือนหุ้นเป็น 'ทุน' ไม่ใช่ 'หนี้สิน' — ตรวจสอบการจำแนกประเภท",
+        ],
+        knowledge: {
+          def: "เงินที่สมาชิกสะสมในรูปหุ้นทุกเดือน ถือเป็นการ 'ร่วมเป็นเจ้าของ' สหกรณ์ จัดเป็น 'ทุน' ไม่ใช่ 'หนี้สิน' สมาชิกได้รับเงินปันผลเมื่อสหกรณ์มีกำไร",
+          recognition: "รับรู้เมื่อได้รับเงินค่าหุ้นจริง หรือเมื่อได้รับรายงานว่าหักเงิน ณ ที่จ่ายส่งมาแล้ว จัดทำทะเบียนหุ้นรายบุคคล",
+          measurement: "แสดงด้วยยอดคงเหลือตามบัญชี กรณีขาดทุนสะสมต้องคำนวณมูลค่าต่อหุ้นใหม่",
+          ref: "ข้อ 77-78 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "รับเงินค่าหุ้นจากหน่วยงาน (หักส่งผ่านบัญชี) 75,000 บาท", rows: [
+              { side:"Dr", acc:"เงินฝากธนาคาร", dr:"75,000", cr:"" },
+              { side:"Cr", acc:"ทุนเรือนหุ้น", dr:"", cr:"75,000" },
+            ]},
+            { title: "สมาชิกลาออก จ่ายคืนค่าหุ้น 8,000 บาท เป็นเงินสด", rows: [
+              { side:"Dr", acc:"ทุนเรือนหุ้น", dr:"8,000", cr:"" },
+              { side:"Cr", acc:"เงินสด", dr:"", cr:"8,000" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "3.2",
+        name: "ทุนสำรอง / ทุนสะสมต่างๆ",
+        type: "ทุน",
+        badge: "badge-equity",
+        shortDesc: "ทุนสำรอง ≥10% | ทุนศึกษาอบรม | สาธารณประโยชน์ | ขยายงาน | รักษาระดับปันผล",
+        checkItems: [
+          "ทุนสำรองจัดสรรไม่น้อยกว่า 10% ของกำไรสุทธิตามกฎหมาย",
+          "บันทึกการจัดสรรกำไรตามมติที่ประชุมใหญ่เท่านั้น",
+          "กรณีขาดทุน — หักออกจากทุนสำรองก่อน เหลือเป็นขาดทุนสะสม",
+          "การลดยอดทุนสะสมต้องเป็นไปตามระเบียบสหกรณ์",
+        ],
+        knowledge: {
+          def: "ทุนสะสมที่จัดสรรจากกำไรสุทธิตามมติที่ประชุมใหญ่\nทุนสำรอง: บังคับ ≥10% ของกำไรสุทธิ ห้ามจ่ายปันผล\nทุนศึกษาอบรม, ทุนสาธารณประโยชน์, ทุนเพื่อขยายงาน, ทุนรักษาระดับปันผล",
+          recognition: "รับรู้เมื่อที่ประชุมใหญ่มีมติอนุมัติจัดสรรกำไร ก่อนมีมติยังไม่รับรู้",
+          measurement: "แสดงด้วยยอดคงเหลือ กรณีขาดทุนสุทธิให้หักออกจากทุนสำรองก่อน",
+          ref: "ข้อ 77 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "จัดสรรกำไรสุทธิ 300,000 บาทตามมติที่ประชุมใหญ่", rows: [
+              { side:"Dr", acc:"กำไรสุทธิ", dr:"300,000", cr:"" },
+              { side:"Cr", acc:"ทุนสำรอง", dr:"", cr:"50,000" },
+              { side:"Cr", acc:"ทุนศึกษาอบรม", dr:"", cr:"20,000" },
+              { side:"Cr", acc:"ทุนสาธารณประโยชน์", dr:"", cr:"10,000" },
+              { side:"Cr", acc:"เงินปันผลตามหุ้นค้างจ่าย", dr:"", cr:"120,000" },
+              { side:"Cr", acc:"เงินเฉลี่ยคืนค้างจ่าย", dr:"", cr:"100,000" },
+            ]},
+          ]
+        }
+      },
+    ]
+  },
+  {
+    id: "s4",
+    icon: "📈",
+    label: "หมวด 4",
+    title: "รายได้",
+    accounts: [
+      {
+        code: "4.1",
+        name: "ดอกเบี้ยรับจากเงินให้กู้",
+        type: "รายได้",
+        badge: "badge-revenue",
+        shortDesc: "รายได้หลัก — บันทึกตามเกณฑ์คงค้าง ไม่ใช่เกณฑ์เงินสด",
+        checkItems: [
+          "บันทึกดอกเบี้ยตามเกณฑ์คงค้าง ไม่ใช่วันที่รับเงิน",
+          "ปรับปรุงดอกเบี้ยค้างรับทุกสิ้นปีบัญชี",
+          "ลูกหนี้ NPL — ระงับการรับรู้รายได้ดอกเบี้ยและเปิดเผยจำนวนที่ไม่รับรู้",
+          "ตรวจสอบลำดับการตัดชำระ: ค่าปรับ → ดอกเบี้ยค้าง → ดอกเบี้ยปี → เงินต้น",
+        ],
+        knowledge: {
+          def: "รายได้หลักของสหกรณ์ออมทรัพย์ บันทึกตามเกณฑ์คงค้าง แม้ยังไม่รับเงินสดแต่หากดอกเบี้ยเกิดขึ้นแล้วตามสัญญา ต้องรับรู้ในงวดที่เกิดขึ้น",
+          recognition: "รับรู้เมื่อดอกเบี้ยเกิดขึ้นตามสัดส่วนระยะเวลา (เกณฑ์คงค้าง) ยกเว้นลูกหนี้ NPL ต้องระงับการรับรู้",
+          measurement: "วัดด้วยจำนวนดอกเบี้ยที่คำนวณได้ตามสัญญา ปรับปรุงดอกเบี้ยค้างรับทุกสิ้นปี",
+          ref: "ข้อ 7 + ข้อ 79 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "สิ้นปี คำนวณดอกเบี้ยที่เกิดขึ้นแต่ยังไม่ได้รับ 8,000 บาท", rows: [
+              { side:"Dr", acc:"ดอกเบี้ยเงินให้กู้ค้างรับ (สินทรัพย์)", dr:"8,000", cr:"" },
+              { side:"Cr", acc:"ดอกเบี้ยรับจากเงินให้กู้ (รายได้)", dr:"", cr:"8,000" },
+            ]},
+          ]
+        }
+      },
+    ]
+  },
+  {
+    id: "s5",
+    icon: "📉",
+    label: "หมวด 5",
+    title: "ค่าใช้จ่าย",
+    accounts: [
+      {
+        code: "5.1",
+        name: "ดอกเบี้ยจ่าย",
+        type: "ค่าใช้จ่าย",
+        badge: "badge-expense",
+        shortDesc: "ต้นทุนหลัก — ดอกเบี้ยให้ผู้ฝาก และดอกเบี้ยจ่ายเจ้าหนี้ภายนอก",
+        checkItems: [
+          "บันทึกดอกเบี้ยตามเกณฑ์คงค้าง ไม่ใช่วันที่จ่าย",
+          "ปรับปรุงดอกเบี้ยค้างจ่ายทุกสิ้นปีบัญชีเป็นหนี้สิน",
+          "ดอกเบี้ยจ่ายให้ผู้ฝากออมทรัพย์ และผู้ฝากประจำ ต้องแยกบัญชี",
+        ],
+        knowledge: {
+          def: "ต้นทุนหลักของสหกรณ์ออมทรัพย์ ได้แก่ ดอกเบี้ยที่จ่ายให้ผู้ฝากเงิน (ออมทรัพย์/ประจำ) และดอกเบี้ยที่จ่ายให้เจ้าหนี้เงินกู้ภายนอก",
+          recognition: "รับรู้เมื่อดอกเบี้ยเกิดขึ้นตามเกณฑ์คงค้าง ปรับปรุงส่วนที่ค้างจ่ายทุกสิ้นปี",
+          measurement: "วัดด้วยจำนวนดอกเบี้ยที่คำนวณได้ตามสัญญา ปรับปรุงส่วนค้างจ่ายเป็นหนี้สิน",
+          ref: "ข้อ 7 + ข้อ 81 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "สิ้นปี คำนวณดอกเบี้ยเงินรับฝากที่ยังไม่ได้จ่าย 45,000 บาท", rows: [
+              { side:"Dr", acc:"ดอกเบี้ยจ่าย (ค่าใช้จ่าย)", dr:"45,000", cr:"" },
+              { side:"Cr", acc:"ค่าใช้จ่ายค้างจ่าย (หนี้สิน)", dr:"", cr:"45,000" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "5.2",
+        name: "หนี้สงสัยจะสูญ",
+        type: "ค่าใช้จ่าย",
+        badge: "badge-expense",
+        shortDesc: "ค่าใช้จ่ายประมาณการ — ตั้งทุกสิ้นปีตามประกาศกรมตรวจบัญชีสหกรณ์",
+        checkItems: [
+          "ตั้งค่าเผื่อหนี้สงสัยจะสูญตามประกาศกรมตรวจบัญชีสหกรณ์",
+          "พิจารณาหักลดหลักประกัน: เงินฝากค้ำประกัน, หลักทรัพย์รัฐบาล, ที่ดินจดจำนอง",
+          "ที่ดินประเมินโดยราชการหัก 100% | ผู้ประเมินอนุญาตหัก 70%",
+          "กรณีปีถัดไปประมาณการลดลง — โอนกลับค่าเผื่อส่วนที่เกิน",
+        ],
+        knowledge: {
+          def: "ค่าใช้จ่ายที่เกิดจากการประมาณการว่าจะเรียกเก็บหนี้ไม่ได้บางส่วน บันทึกในงบกำไรขาดทุน ส่วนค่าเผื่อแสดงหักจากลูกหนี้",
+          recognition: "รับรู้ทุกสิ้นปีตามประกาศกรมตรวจบัญชีสหกรณ์ โดยพิจารณาหักลดหลักประกันที่มีอยู่ก่อน",
+          measurement: "คำนวณตามหลักเกณฑ์ที่กรมตรวจบัญชีสหกรณ์กำหนด หักหลักประกันตามที่ระบุ",
+          ref: "ข้อ 26-31 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "สิ้นปี ประมาณการค่าเผื่อหนี้สงสัยจะสูญเพิ่ม 120,000 บาท", rows: [
+              { side:"Dr", acc:"หนี้สงสัยจะสูญ (ค่าใช้จ่าย)", dr:"120,000", cr:"" },
+              { side:"Cr", acc:"ค่าเผื่อหนี้สงสัยจะสูญ — ลูกหนี้เงินกู้", dr:"", cr:"120,000" },
+            ]},
+            { title: "สิ้นปีถัดไป โอนกลับค่าเผื่อที่เกิน 20,000 บาท", rows: [
+              { side:"Dr", acc:"ค่าเผื่อหนี้สงสัยจะสูญ", dr:"20,000", cr:"" },
+              { side:"Cr", acc:"หนี้สงสัยจะสูญ (ลดยอดค่าใช้จ่าย)", dr:"", cr:"20,000" },
+            ]},
+          ]
+        }
+      },
+      {
+        code: "5.3",
+        name: "ค่าเสื่อมราคาอาคารและอุปกรณ์",
+        type: "ค่าใช้จ่าย",
+        badge: "badge-expense",
+        shortDesc: "ปันส่วนต้นทุนสินทรัพย์ถาวรตลอดอายุการใช้งาน",
+        checkItems: [
+          "เริ่มคิดค่าเสื่อมราคาเมื่อสินทรัพย์พร้อมใช้งาน",
+          "ใช้วิธีการคำนวณวิธีเดียวกันตลอดอายุการใช้งาน",
+          "สิ้นอายุการใช้งาน — คงเหลือมูลค่า 1 บาทต่อหน่วย",
+          "กรณีจำหน่ายสินทรัพย์ — โอนปิดราคาทุนและค่าเสื่อมสะสมทั้งหมด",
+          "บันทึกค่าเสื่อมราคาไว้ในทะเบียนสินทรัพย์",
+        ],
+        knowledge: {
+          def: "การปันส่วนต้นทุนของสินทรัพย์ถาวรออกตลอดอายุการใช้งานอย่างเป็นระบบ ค่าเสื่อมราคาสะสมแสดงหักจากราคาทุนในงบแสดงฐานะการเงิน",
+          recognition: "รับรู้ทุกสิ้นปีตลอดอายุการใช้งาน เริ่มเมื่อสินทรัพย์พร้อมใช้งาน ที่ดินไม่ต้องคิด",
+          measurement: "วิธีเส้นตรง: ค่าเสื่อมราคา = ราคาทุน × อัตรา% ต่อปี\nวิธีผลรวมจำนวนปี: ใช้สำหรับสินทรัพย์ที่มีประสิทธิภาพสูงในช่วงแรก",
+          ref: "ข้อ 58 ระเบียบนายทะเบียนสหกรณ์ พ.ศ. 2563",
+          examples: [
+            { title: "ค่าเสื่อมราคาสิ้นปี รถยนต์ราคาทุน 610,000 อัตรา 20% วิธีเส้นตรง", rows: [
+              { side:"Dr", acc:"ค่าเสื่อมราคาอาคารและอุปกรณ์ (ค่าใช้จ่าย)", dr:"122,000", cr:"" },
+              { side:"Cr", acc:"ค่าเสื่อมราคาสะสม — ยานพาหนะ", dr:"", cr:"122,000" },
+            ]},
+          ]
+        }
+      },
+    ]
+  },
+];
+
+// ── Build flat account list for navigation ──
+const allAccounts = [];
+SECTIONS.forEach(sec => sec.accounts.forEach(acc => allAccounts.push(acc)));
+let currentModalIdx = -1;
+
+// ── State ──
+const state = {};
+const notes = {};
+
+function getKey(code) { return 'chk_' + code; }
+function getNoteKey(code) { return 'note_' + code; }
+
+function save() {
+  try { localStorage.setItem('coopAuditState', JSON.stringify({state, notes})); } catch(e) {}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('coopAuditState') || '{}');
+    Object.assign(state, d.state || {});
+    Object.assign(notes, d.notes || {});
+  } catch(e) {}
+}
+
+// ── Render ──
+function buildHTML() {
+  const content = document.getElementById('content');
+  const tocList = document.getElementById('tocList');
+  content.innerHTML = '';
+  tocList.innerHTML = '';
+
+  SECTIONS.forEach(sec => {
+    // TOC
+    const totalItems = sec.accounts.reduce((a,acc) => a + acc.checkItems.length, 0);
+    const doneItems = sec.accounts.reduce((a,acc) => a + acc.checkItems.filter((_,i) => state[getKey(acc.code+'_'+i)]).length, 0);
+
+    const tocEl = document.createElement('div');
+    tocEl.className = 'toc-item';
+    tocEl.id = 'toc_' + sec.id;
+    tocEl.innerHTML = `<span class="toc-dot"></span>${sec.icon} ${sec.title}<span class="toc-progress">${doneItems}/${totalItems}</span>`;
+    tocEl.onclick = () => document.getElementById(sec.id).scrollIntoView({behavior:'smooth', block:'start'});
+    tocList.appendChild(tocEl);
+
+    // Section
+    const secEl = document.createElement('div');
+    secEl.className = 'section';
+    secEl.id = sec.id;
+
+    const totalSec = sec.accounts.reduce((a,acc) => a + acc.checkItems.length, 0);
+    const doneSec = sec.accounts.reduce((a,acc) => a + acc.checkItems.filter((_,i) => state[getKey(acc.code+'_'+i)]).length, 0);
+
+    secEl.innerHTML = `
+      <div class="section-header">
+        <div class="section-icon">${sec.icon}</div>
+        <div>
+          <div class="section-label">${sec.label}</div>
+          <div class="section-title">${sec.title}</div>
+        </div>
+        <div class="section-stats">${doneSec} / ${totalSec} รายการ</div>
+      </div>
+      <div class="check-table" id="table_${sec.id}"></div>
+    `;
+    content.appendChild(secEl);
+
+    const table = secEl.querySelector('#table_' + sec.id);
+
+    sec.accounts.forEach(acc => {
+      const accIdx = allAccounts.indexOf(acc);
+
+      // Account header row
+      const accHeader = document.createElement('div');
+      accHeader.style.cssText = 'padding:10px 16px 6px 44px; display:flex; align-items:center; gap:10px; background:var(--surface2); border-bottom:1px solid var(--border);';
+      accHeader.innerHTML = `
+        <span class="row-code">${acc.code}</span>
+        <span style="font-size:14px;font-weight:600;color:var(--white)">${acc.name}</span>
+        <span class="row-type-badge ${acc.badge}">${acc.type}</span>
+        <span style="font-size:12px;color:var(--white-muted);flex:1">${acc.shortDesc}</span>
+        <button class="btn-info" onclick="openModal(${accIdx})">
+          <span class="btn-info-icon">📖</span> ดูคู่มือ
+        </button>
+      `;
+      table.appendChild(accHeader);
+
+      // Check items
+      acc.checkItems.forEach((item, i) => {
+        const key = getKey(acc.code + '_' + i);
+        const noteKey = getNoteKey(acc.code + '_' + i);
+        const isDone = !!state[key];
+        const noteVal = notes[noteKey] || '';
+
+        const row = document.createElement('div');
+        row.className = 'check-row' + (isDone ? ' checked' : '');
+        row.id = key;
+        row.innerHTML = `
+          <div class="check-cell" onclick="toggleCheck('${key}', this)">
+            <div class="check-box">
+              <span class="check-icon">✓</span>
+            </div>
+          </div>
+          <div class="row-info">
+            <div class="row-name">${item}</div>
+          </div>
+          <div class="row-link"></div>
+          <div class="row-note-cell">
+            <button class="note-toggle" title="เพิ่มหมายเหตุ" onclick="toggleNote('${noteKey}', this)">💬</button>
+          </div>
+        `;
+
+        const noteArea = document.createElement('div');
+        noteArea.className = 'note-area' + (noteVal ? ' open' : '');
+        noteArea.id = 'note_' + noteKey;
+        noteArea.innerHTML = `<textarea class="note-input" placeholder="หมายเหตุ / ข้อสังเกต..." oninput="saveNote('${noteKey}', this.value)">${noteVal}</textarea>`;
+
+        table.appendChild(row);
+        table.appendChild(noteArea);
+      });
+    });
+  });
+
+  updateProgress();
+}
+
+function toggleCheck(key, clickedCell) {
+  state[key] = !state[key];
+  const row = document.getElementById(key);
+  row.classList.toggle('checked', state[key]);
+  save();
+  updateProgress();
+  rebuildStats();
+}
+
+function toggleNote(noteKey, btn) {
+  const area = document.getElementById('note_' + noteKey);
+  area.classList.toggle('open');
+}
+
+function saveNote(noteKey, val) {
+  notes[noteKey] = val;
+  save();
+}
+
+function updateProgress() {
+  const allItems = allAccounts.reduce((a,acc) => a + acc.checkItems.length, 0);
+  const doneItems = Object.values(state).filter(Boolean).length;
+  const pct = allItems > 0 ? Math.round(doneItems / allItems * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = doneItems + ' / ' + allItems;
+
+  // Update TOC stats
+  SECTIONS.forEach(sec => {
+    const totalItems = sec.accounts.reduce((a,acc) => a + acc.checkItems.length, 0);
+    const doneItems2 = sec.accounts.reduce((a,acc) => a + acc.checkItems.filter((_,i) => state[getKey(acc.code+'_'+i)]).length, 0);
+    const tocEl = document.getElementById('toc_' + sec.id);
+    if(tocEl) {
+      const prog = tocEl.querySelector('.toc-progress');
+      if(prog) prog.textContent = doneItems2 + '/' + totalItems;
+      tocEl.classList.toggle('active', doneItems2 > 0 && doneItems2 < totalItems);
+    }
+  });
+}
+
+function rebuildStats() {
+  SECTIONS.forEach(sec => {
+    const totalSec = sec.accounts.reduce((a,acc) => a + acc.checkItems.length, 0);
+    const doneSec = sec.accounts.reduce((a,acc) => a + acc.checkItems.filter((_,i) => state[getKey(acc.code+'_'+i)]).length, 0);
+    const hdr = document.querySelector('#' + sec.id + ' .section-stats');
+    if(hdr) hdr.textContent = doneSec + ' / ' + totalSec + ' รายการ';
+  });
+}
+
+function resetAll() {
+  if(!confirm('รีเซ็ตเช็คลิสต์ทั้งหมด?')) return;
+  Object.keys(state).forEach(k => delete state[k]);
+  Object.keys(notes).forEach(k => delete notes[k]);
+  save();
+  buildHTML();
+}
+
+// ── MODAL ──
+function openModal(idx) {
+  currentModalIdx = idx;
+  renderModal(idx);
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModalIfOutside(e) {
+  if(e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function navModal(dir) {
+  const newIdx = currentModalIdx + dir;
+  if(newIdx >= 0 && newIdx < allAccounts.length) openModal(newIdx);
+}
+
+function renderModal(idx) {
+  const acc = allAccounts[idx];
+  const k = acc.knowledge;
+
+  document.getElementById('mCode').textContent = acc.code;
+  document.getElementById('mTitle').textContent = acc.name;
+  document.getElementById('mType').textContent = acc.type + '  ·  ' + acc.shortDesc;
+
+  // Build body
+  let html = '';
+
+  // Definition
+  html += `<div class="m-section">
+    <div class="m-label">นิยามและความหมาย</div>
+    <div class="m-def">${k.def.replace(/\n/g,'<br>')}</div>
+  </div>`;
+
+  // Recognition + Measurement
+  html += `<div class="m-section">
+    <div class="m-label">หลักการรับรู้และการวัดมูลค่า</div>
+    <div class="m-kv">
+      <div class="m-kv-key">การรับรู้ :</div>
+      <div class="m-kv-val">${k.recognition}</div>
+      <div class="m-kv-key">การวัดมูลค่า :</div>
+      <div class="m-kv-val">${k.measurement}</div>
+    </div>
+  </div>`;
+
+  // Examples
+  if(k.examples && k.examples.length) {
+    html += `<div class="m-section">
+      <div class="m-label">ตัวอย่างการบันทึกบัญชี</div>
+      <div class="m-journal">`;
+
+    k.examples.forEach(ex => {
+      html += `<div class="m-je-title">◉ ${ex.title}</div>
+        <table class="m-je-table">
+          <thead><tr>
+            <th style="width:48px">ด้าน</th>
+            <th>ชื่อบัญชี</th>
+            <th style="width:110px">เดบิต</th>
+            <th style="width:110px">เครดิต</th>
+          </tr></thead>
+          <tbody>`;
+      ex.rows.forEach(r => {
+        const sd = r.side === 'Dr' ? `<span class="side-d">Dr</span>` : `<span class="side-c">Cr</span>`;
+        const an = r.side === 'Dr' ? `<span class="acc-debit">${r.acc}</span>` : `<span class="acc-credit">${r.acc}</span>`;
+        const d = r.dr ? `<span class="amt-d">${r.dr}</span>` : '<span style="color:var(--white-muted)">—</span>';
+        const c = r.cr ? `<span class="amt-c">${r.cr}</span>` : '<span style="color:var(--white-muted)">—</span>';
+        html += `<tr><td>${sd}</td><td>${an}</td><td>${d}</td><td>${c}</td></tr>`;
+      });
+      html += '</tbody></table>';
+    });
+
+    html += `</div></div>`;
+  }
+
+  // Reference
+  html += `<div class="m-section">
+    <div class="m-ref">📌 <span>อ้างอิง:</span> ${k.ref}</div>
+  </div>`;
+
+  document.getElementById('mBody').innerHTML = html;
+
+  // Nav buttons
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').disabled = idx === allAccounts.length - 1;
+
+  if(idx > 0) document.getElementById('btnPrev').textContent = '← ' + allAccounts[idx-1].code + ' ' + allAccounts[idx-1].name;
+  if(idx < allAccounts.length - 1) document.getElementById('btnNext').textContent = allAccounts[idx+1].code + ' ' + allAccounts[idx+1].name + ' →';
+}
+
+// keyboard nav
+document.addEventListener('keydown', e => {
+  if(document.getElementById('modalOverlay').classList.contains('open')) {
+    if(e.key === 'Escape') closeModal();
+    if(e.key === 'ArrowLeft') navModal(-1);
+    if(e.key === 'ArrowRight') navModal(1);
+  }
+});
+
+// intersection observer for TOC active state
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting) {
+      document.querySelectorAll('.toc-item').forEach(t => t.classList.remove('active'));
+      const tocEl = document.getElementById('toc_' + entry.target.id);
+      if(tocEl) tocEl.classList.add('active');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '-70px 0px -60% 0px' });
+
+// ── INIT ──
+load();
+buildHTML();
+
+// observe sections after build
+setTimeout(() => {
+  SECTIONS.forEach(sec => {
+    const el = document.getElementById(sec.id);
+    if(el) observer.observe(el);
+  });
+}, 100);
+</script>
+</body>
+</html>
