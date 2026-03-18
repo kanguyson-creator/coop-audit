@@ -110,6 +110,62 @@
   }
   .btn-reset:hover { border-color: var(--orange); color: var(--orange); }
 
+  /* ─── NAME + SAVE ─── */
+  .save-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .name-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--white);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: var(--radius);
+    width: 220px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .name-input:focus { border-color: var(--orange); }
+  .name-input::placeholder { color: var(--white-muted); }
+  .btn-save {
+    background: var(--orange);
+    color: #fff;
+    border: none;
+    padding: 8px 22px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-save:hover { background: var(--orange-dim); }
+  .btn-save:active { transform: scale(0.97); }
+  .btn-save:disabled { opacity: 0.5; pointer-events: none; }
+  .save-status {
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    display: none;
+  }
+  .save-status.ok { display: block; background: rgba(76,175,120,0.15); color: #4caf78; border: 1px solid rgba(76,175,120,0.3); }
+  .save-status.err { display: block; background: rgba(224,80,80,0.15); color: #e05050; border: 1px solid rgba(224,80,80,0.3); }
+  .save-status.loading { display: block; background: var(--orange-glow2); color: var(--orange); border: 1px solid var(--orange-dim); }
+
   /* ─── MAIN LAYOUT ─── */
   .main {
     max-width: 1100px;
@@ -679,6 +735,13 @@
   <div class="content" id="content"></div>
 </div>
 
+<!-- SAVE BAR -->
+<div class="save-bar">
+  <input class="name-input" id="staffName" type="text" placeholder="ชื่อพนักงาน..." maxlength="50" />
+  <button class="btn-save" id="btnSave" onclick="saveToSheets()">💾 บันทึกลง Google Sheets</button>
+  <div class="save-status" id="saveStatus"></div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalIfOutside(event)">
   <div class="modal" id="modal">
@@ -1162,6 +1225,61 @@ const SECTIONS = [
 const allAccounts = [];
 SECTIONS.forEach(sec => sec.accounts.forEach(acc => allAccounts.push(acc)));
 let currentModalIdx = -1;
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwI7NOhBOoN1qx4BRhTtiTN8H4sppL6o4EkDKsEfR1zQqo6A855W-p3V505x4sTUQfq/exec";
+
+// ── Save to Google Sheets ──
+async function saveToSheets() {
+  const name = document.getElementById('staffName').value.trim();
+  if (!name) {
+    alert('กรุณาใส่ชื่อพนักงานก่อนบันทึกครับ');
+    document.getElementById('staffName').focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnSave');
+  const status = document.getElementById('saveStatus');
+
+  btn.disabled = true;
+  status.className = 'save-status loading';
+  status.textContent = '⏳ กำลังบันทึก...';
+
+  // รวบรวมข้อมูลทั้งหมด
+  const items = [];
+  SECTIONS.forEach(sec => {
+    sec.accounts.forEach(acc => {
+      acc.checkItems.forEach((item, i) => {
+        const key = getKey(acc.code + '_' + i);
+        const noteKey = getNoteKey(acc.code + '_' + i);
+        items.push({
+          account: acc.code + ' ' + acc.name,
+          item: item,
+          checked: !!state[key],
+          note: notes[noteKey] || ''
+        });
+      });
+    });
+  });
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, items })
+    });
+
+    status.className = 'save-status ok';
+    status.textContent = '✅ บันทึกสำเร็จแล้วครับ';
+    setTimeout(() => { status.className = 'save-status'; }, 4000);
+
+  } catch(err) {
+    status.className = 'save-status err';
+    status.textContent = '❌ บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง';
+  }
+
+  btn.disabled = false;
+}
 
 // ── State ──
 const state = {};
